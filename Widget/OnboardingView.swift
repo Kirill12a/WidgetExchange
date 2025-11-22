@@ -30,7 +30,6 @@ struct OnboardingView: View {
     @State private var selectedIndex = 0
     @Namespace private var ctaNamespace
     @State private var slideDirection: SlideDirection = .forward
-    @GestureState private var dragOffset: CGFloat = 0
 
     var body: some View {
         let accent = slides[selectedIndex].accent
@@ -53,28 +52,7 @@ struct OnboardingView: View {
                         }
                     }
                 }
-                .offset(x: dragOffset)
                 .frame(maxHeight: .infinity)
-                .gesture(
-                    DragGesture()
-                        .updating($dragOffset) { value, state, _ in
-                            state = value.translation.width
-                        }
-                        .onEnded { value in
-                            let threshold: CGFloat = 80
-                            if value.translation.width < -threshold, selectedIndex < slides.count - 1 {
-                                slideDirection = .forward
-                                withAnimation(.spring(response: 0.65, dampingFraction: 0.85)) {
-                                    selectedIndex += 1
-                                }
-                            } else if value.translation.width > threshold, selectedIndex > 0 {
-                                slideDirection = .backward
-                                withAnimation(.spring(response: 0.65, dampingFraction: 0.85)) {
-                                    selectedIndex -= 1
-                                }
-                            }
-                        }
-                )
 
                 HStack(spacing: 8) {
                     ForEach(0..<slides.count, id: \.self) { index in
