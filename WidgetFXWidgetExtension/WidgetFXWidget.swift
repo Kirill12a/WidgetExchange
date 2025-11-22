@@ -14,14 +14,6 @@ struct WidgetFXEntry: TimelineEntry {
     let date: Date
     let snapshot: ConverterSnapshot
     let presets: [WidgetPreset]
-    let conversions: [WidgetConversionDisplay]
-}
-
-struct WidgetConversionDisplay: Identifiable, Hashable {
-    let id = UUID()
-    let code: String
-    let rate: Double
-    let converted: Double
 }
 
 @available(iOSApplicationExtension 17.0, *)
@@ -34,25 +26,22 @@ struct WidgetFXTimelineProvider: AppIntentTimelineProvider {
         return WidgetFXEntry(
             date: Date(),
             snapshot: placeholderSnapshot,
-            presets: RatesCache.shared.defaultPresets,
-            conversions: WidgetConversionBuilder.makePlaceholder(base: placeholderSnapshot.baseCurrency)
+            presets: RatesCache.shared.defaultPresets
         )
     }
 
     func snapshot(for configuration: WidgetFXConfigurationIntent, in context: Context) async -> WidgetFXEntry {
         let snapshot = RatesCache.shared.loadSnapshot() ?? .placeholder
         let presets = RatesCache.shared.loadPresets() ?? RatesCache.shared.defaultPresets
-        let conversions = WidgetConversionBuilder.make(with: snapshot)
-        return WidgetFXEntry(date: snapshot.timestamp, snapshot: snapshot, presets: presets, conversions: conversions)
+        return WidgetFXEntry(date: snapshot.timestamp, snapshot: snapshot, presets: presets)
     }
 
     func timeline(for configuration: WidgetFXConfigurationIntent, in context: Context) async -> Timeline<WidgetFXEntry> {
         let snapshot = RatesCache.shared.loadSnapshot() ?? .placeholder
         let presets = RatesCache.shared.loadPresets() ?? RatesCache.shared.defaultPresets
-        let conversions = WidgetConversionBuilder.make(with: snapshot)
 
         let now = Date()
-        let entry = WidgetFXEntry(date: now, snapshot: snapshot, presets: presets, conversions: conversions)
+        let entry = WidgetFXEntry(date: now, snapshot: snapshot, presets: presets)
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: now) ?? now.addingTimeInterval(900)
 
         return Timeline(entries: [entry], policy: .after(nextUpdate))
@@ -78,12 +67,6 @@ struct WidgetFXWidgetEntryView: View {
 @available(iOSApplicationExtension 17.0, *)
 private struct WidgetFXLargeView: View {
     let entry: WidgetFXEntry
-    private var conversions: [WidgetConversionDisplay] {
-        if entry.conversions.isEmpty {
-            return WidgetConversionBuilder.makePlaceholder(base: entry.snapshot.baseCurrency)
-        }
-        return entry.conversions
-    }
 
     var body: some View {
         ZStack {
@@ -92,8 +75,8 @@ private struct WidgetFXLargeView: View {
             VStack(alignment: .leading, spacing: WidgetTheme.metrics.sectionSpacing) {
                 AmountSummaryCard(amountText: entry.snapshot.amountText, currency: entry.snapshot.baseCurrency)
                     // Выносим ключевую сумму в отдельную карточку, чтобы взгляд сразу находил главный показатель.
-                ConversionSummaryCard(conversions: conversions, targetCurrency: entry.snapshot.targetCurrency)
-                    // Список конверсий и курс разделены, поэтому информация не смешивается и читается быстрее.
+                ConversionSummaryCard(snapshot: entry.snapshot)
+                    // Показываем актуальный таргет из снапшота, избегая рассинхрона с приложением.
                 KeypadMockView(amountText: entry.snapshot.amountText)
             }
             .padding(WidgetTheme.metrics.contentPadding)
@@ -147,52 +130,33 @@ private struct AmountSummaryCard: View {
 
 @available(iOSApplicationExtension 17.0, *)
 private struct ConversionSummaryCard: View {
-    let conversions: [WidgetConversionDisplay]
-    let targetCurrency: String
+    let snapshot: ConverterSnapshot
+
+    private var convertedText: String {
+        snapshot.converted.formatted(.number.precision(.fractionLength(2)))
+    }
+
+    private var rateText: String {
+        snapshot.rate.formatted(.number.precision(.fractionLength(4)))
+    }
 
     var body: some View {
         WidgetSurfaceCard(background: WidgetTheme.palette.surfaceSecondary) {
             VStack(alignment: .leading, spacing: WidgetTheme.metrics.cardSpacing) {
-                WidgetSectionHeader(title: "Конвертация", subtitle: "до \(targetCurrency)")
-                if conversions.isEmpty {
-                    Text("Нет данных")
-                        .font(.footnote)
-                        .foregroundStyle(WidgetTheme.palette.textMuted)
-                } else {
-                    VStack(alignment: .leading, spacing: WidgetTheme.metrics.cardSpacing) {
-                        ForEach(conversions) { conversion in
-                            ConversionRow(conversion: conversion, targetCurrency: targetCurrency)
-                            if conversion.id != conversions.last?.id {
-                                WidgetDivider()
-                            }
-                        }
-                    }
+                WidgetSectionHeader(title: "Конвертация", subtitle: nil)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(convertedText)
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
+                        .foregroundStyle(WidgetTheme.palette.textPrimary)
+                        .lineLimit(1)
+                    Spacer(minLength: 6)
+                    CurrencyTag(text: snapshot.targetCurrency)
                 }
+                WidgetDivider()
+                Text("1 \(snapshot.baseCurrency) = \(rateText) \(snapshot.targetCurrency)")
+                    .font(.caption)
+                    .foregroundStyle(WidgetTheme.palette.textMuted)
             }
-        }
-    }
-}
-
-@available(iOSApplicationExtension 17.0, *)
-private struct ConversionRow: View {
-    let conversion: WidgetConversionDisplay
-    let targetCurrency: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(conversion.converted.formatted(.number.precision(.fractionLength(2))))
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
-                    .foregroundStyle(WidgetTheme.palette.textPrimary)
-                    .lineLimit(1)
-                Spacer()
-                Text(conversion.code)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(WidgetTheme.palette.textSecondary)
-            }
-            Text("курс \(conversion.rate.formatted(.number.precision(.fractionLength(4)))) • \(targetCurrency)")
-                .font(.caption)
-                .foregroundStyle(WidgetTheme.palette.textMuted)
         }
     }
 }
@@ -400,41 +364,5 @@ private struct UnsupportedSizeView: View {
                 .multilineTextAlignment(.center)
         }
         .padding()
-    }
-}
-
-// MARK: - Conversion builder
-
-enum WidgetConversionBuilder {
-    static func make(with snapshot: ConverterSnapshot) -> [WidgetConversionDisplay] {
-        guard let rates = RatesCache.shared.loadRates(), rates.base == snapshot.baseCurrency else {
-            return makePlaceholder(base: snapshot.baseCurrency)
-        }
-
-        let desiredCodes = CurrencyCatalog.primaryCodes
-            .filter { $0 != snapshot.baseCurrency }
-            .prefix(5)
-
-        var result: [WidgetConversionDisplay] = []
-        for code in desiredCodes {
-            guard let rate = rates.rates[code] else { continue }
-            let converted = snapshot.amount * rate
-            result.append(WidgetConversionDisplay(code: code, rate: rate, converted: converted))
-        }
-
-        if result.count < 5 {
-            result.append(contentsOf: makePlaceholder(base: snapshot.baseCurrency).dropFirst(result.count))
-        }
-
-        return Array(result.prefix(1))
-    }
-
-    static func makePlaceholder(base: String) -> [WidgetConversionDisplay] {
-        let fallbackCodes = CurrencyCatalog.extendedCodes.filter { $0 != base }.prefix(5)
-        let displays = fallbackCodes.map { code in
-            let mockRate = Double.random(in: 0.5...120)
-            return WidgetConversionDisplay(code: code, rate: mockRate, converted: 100 * mockRate)
-        }
-        return Array(displays.prefix(1))
     }
 }
