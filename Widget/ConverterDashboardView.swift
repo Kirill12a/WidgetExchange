@@ -113,6 +113,7 @@ private struct HeroConversionCard: View {
                     .font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundStyle(palette.textPrimary)
                     .minimumScaleFactor(0.7)
+                    .animatedMetric(viewModel.convertedValue ?? 0)
                 Text(viewModel.targetCurrency)
                     .font(.title3)
                     .foregroundStyle(palette.textSecondary)
@@ -121,6 +122,7 @@ private struct HeroConversionCard: View {
             Text(viewModel.formattedRate)
                 .font(.subheadline)
                 .foregroundStyle(palette.textSecondary)
+                .animatedMetric(viewModel.latestRates?.rates[viewModel.targetCurrency] ?? 0)
 
             Divider()
 
@@ -533,6 +535,26 @@ private extension Array {
             index += size
         }
         return chunks
+    }
+}
+
+private struct AnimatedMetricModifier: ViewModifier {
+    let value: Double
+
+    func body(content: Content) -> some View {
+        if #available(iOS 17.0, *) {
+            content
+                .contentTransition(.numericText(value: value))
+                .animation(.spring(response: 0.45, dampingFraction: 0.85), value: value)
+        } else {
+            content
+        }
+    }
+}
+
+private extension View {
+    func animatedMetric(_ value: Double) -> some View {
+        modifier(AnimatedMetricModifier(value: value))
     }
 }
 

@@ -29,6 +29,7 @@ struct OnboardingView: View {
 
     @State private var selectedIndex = 0
     @Namespace private var ctaNamespace
+    @State private var slideDirection: SlideDirection = .forward
 
     var body: some View {
         let accent = slides[selectedIndex].accent
@@ -42,14 +43,15 @@ struct OnboardingView: View {
             .animation(.easeInOut(duration: 0.65), value: selectedIndex)
 
             VStack(spacing: 32) {
-                TabView(selection: $selectedIndex) {
+                ZStack {
                     ForEach(Array(slides.enumerated()), id: \.element.id) { index, slide in
-                        OnboardingSlideView(slide: slide, isActive: selectedIndex == index)
-                            .tag(index)
-                            .padding(.horizontal, 24)
+                        if selectedIndex == index {
+                            OnboardingSlideView(slide: slide, isActive: true)
+                                .padding(.horizontal, 24)
+                                .transition(slideDirection == .forward ? .onboardingForward : .onboardingBackward)
+                        }
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
                 .frame(maxHeight: .infinity)
 
                 HStack(spacing: 8) {
@@ -63,7 +65,8 @@ struct OnboardingView: View {
                 VStack(spacing: 16) {
                     Button {
                         if selectedIndex < slides.count - 1 {
-                            withAnimation(.spring()) {
+                            slideDirection = .forward
+                            withAnimation(.spring(response: 0.65, dampingFraction: 0.85)) {
                                 selectedIndex += 1
                             }
                         } else {
@@ -160,49 +163,49 @@ private struct WidgetPreviewCard: View {
         RoundedRectangle(cornerRadius: 32)
             .fill(
                 LinearGradient(
-                    colors: [slide.accent.opacity(0.4), slide.accent.opacity(0.15)],
+                    colors: [slide.accent.opacity(0.45), slide.accent.opacity(0.2)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
             .overlay(
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 20) {
                     HStack {
                         Label(AppLocale.text(.onboardingWidgetBadge), systemImage: "rectangle.grid.2x2")
                             .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.9))
+                            .foregroundStyle(.white)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Color.white.opacity(0.15), in: Capsule())
+                            .background(Color.white.opacity(0.2), in: Capsule())
                         Spacer()
                         Image(systemName: slide.icon)
                             .font(.system(size: 36, weight: .semibold))
                             .foregroundColor(.white)
                             .padding(12)
-                            .background(Color.white.opacity(0.12), in: Circle())
-                            .shadow(color: .black.opacity(0.2), radius: iconPulse ? 20 : 10, x: 0, y: 8)
-                            .scaleEffect(isActive ? 1 : 0.92)
+                            .background(Color.white.opacity(0.15), in: Circle())
+                            .shadow(color: .black.opacity(0.2), radius: iconPulse ? 18 : 10, x: 0, y: 8)
+                            .scaleEffect(isActive ? 1 : 0.9)
                     }
 
-                    VStack(spacing: 12) {
+                    VStack(spacing: 14) {
                         PreviewRow(title: AppLocale.text(.widgetAmountTitle), value: "12 970 USD")
                         PreviewRow(title: AppLocale.text(.widgetConversionTitle), value: "11 985 EUR")
                         PreviewRow(title: AppLocale.text(.rateFormatted, "USD", "0.92", "EUR"), value: AppLocale.text(.overlayConversion))
                     }
 
                     if showsOfflineBadge {
-                        Label(AppLocale.text(.onboardingOfflineBadge), systemImage: "wifi.slash")
-                            .font(.footnote)
+                        Label(AppLocale.text(.onboardingOfflineBadge), systemImage: "bolt.horizontal.circle")
+                            .font(.footnote.weight(.medium))
                             .foregroundStyle(.white)
                             .padding(.vertical, 6)
                             .padding(.horizontal, 12)
-                            .background(Color.white.opacity(0.15), in: Capsule())
+                            .background(Color.white.opacity(0.2), in: Capsule())
                     }
                 }
                 .padding(24)
             )
             .frame(height: 260)
-            .scaleEffect(isActive ? 1 : 0.97)
+            .scaleEffect(isActive ? 1 : 0.95)
             .animation(.spring(response: 0.5, dampingFraction: 0.85), value: isActive)
     }
 }
@@ -212,19 +215,33 @@ private struct PreviewRow: View {
     let value: String
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title.uppercased())
-                    .font(.caption2)
-                    .foregroundStyle(Color.white.opacity(0.7))
-                Text(value)
-                    .font(.headline)
-                    .foregroundStyle(.white)
-            }
-            Spacer()
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title.uppercased())
+                .font(.caption2)
+                .foregroundStyle(Color.white.opacity(0.75))
+            Text(value)
+                .font(.headline)
+                .foregroundStyle(.white)
         }
-        .padding()
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .background(Color.white.opacity(0.15), in: RoundedRectangle(cornerRadius: 18))
     }
+}
+
+private enum SlideDirection {
+    case forward, backward
+}
+
+private extension AnyTransition {
+    static let onboardingForward = AnyTransition.asymmetric(
+        insertion: .move(edge: .trailing).combined(with: .opacity),
+        removal: .move(edge: .leading).combined(with: .opacity)
+    )
+
+    static let onboardingBackward = AnyTransition.asymmetric(
+        insertion: .move(edge: .leading).combined(with: .opacity),
+        removal: .move(edge: .trailing).combined(with: .opacity)
+    )
 }
