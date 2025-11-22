@@ -43,8 +43,6 @@ struct ConverterDashboardView: View {
                         )
                     }
 
-                    WidgetIntegrationCard(viewModel: viewModel)
-
                     WidgetPresetConfigCard(viewModel: viewModel) {
                         isEditingPresets = true
                     }
@@ -384,55 +382,6 @@ private struct SparklineView: View {
             let y = size.height * (1 - CGFloat(normalizedY))
             return CGPoint(x: x, y: y)
         }
-    }
-}
-
-// MARK: - Widget integration
-
-private struct WidgetIntegrationCard: View {
-    @ObservedObject var viewModel: CurrencyViewModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("API для внешних виджетов")
-                        .font(.headline)
-                    Text("Каждый виджет имеет токен, лимиты и разрешённые пары.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button("Документация") {}
-                    .buttonStyle(.bordered)
-            }
-
-            VStack(spacing: 12) {
-                ForEach(viewModel.widgetLinks) { link in
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(link.name)
-                                .fontWeight(.semibold)
-                            Spacer()
-                            Text(link.token.uppercased())
-                                .font(.caption)
-                                .padding(6)
-                                .background(Color(.systemGray6), in: Capsule())
-                        }
-
-                        Text("Пары: \(link.allowedPairs.joined(separator: ", "))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        WidgetSnippetView(endpoint: viewModel.widgetEndpoint(for: link.token), from: viewModel.baseCurrency, to: viewModel.targetCurrency)
-                    }
-                    .padding()
-                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
-                }
-            }
-        }
-        .padding(20)
-        .background(.background, in: RoundedRectangle(cornerRadius: 24))
     }
 }
 
