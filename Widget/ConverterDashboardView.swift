@@ -15,6 +15,9 @@ struct ConverterDashboardView: View {
     @ObservedObject var viewModel: CurrencyViewModel
     @EnvironmentObject private var purchaseManager: PurchaseManager
     @State private var isKeyboardVisible = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: AppTheme.Palette { AppTheme.palette(for: colorScheme) }
 
     var body: some View {
         NavigationStack {
@@ -25,9 +28,9 @@ struct ConverterDashboardView: View {
                             OfflineBanner(message: errorMessage)
                         }
 
-                        HeroConversionCard(viewModel: viewModel, isSubscribed: purchaseManager.isSubscribed)
+                        HeroConversionCard(viewModel: viewModel, isSubscribed: purchaseManager.isSubscribed, palette: palette)
 
-                        AmountInputCard(viewModel: viewModel)
+                        AmountInputCard(viewModel: viewModel, palette: palette)
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 32)
@@ -36,7 +39,7 @@ struct ConverterDashboardView: View {
                 .allowsHitTesting(!isKeyboardVisible)
 
                 if isKeyboardVisible {
-                    KeyboardFocusOverlay(viewModel: viewModel) {
+                    KeyboardFocusOverlay(viewModel: viewModel, palette: palette) {
 #if canImport(UIKit)
                         dismissKeyboardGlobally()
 #endif
@@ -48,8 +51,8 @@ struct ConverterDashboardView: View {
                     .zIndex(1)
                 }
             }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("Widget FX")
+            .background(palette.screenBackground.ignoresSafeArea())
+            .navigationTitle(AppLocale.text(.dashboardTitle))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -90,53 +93,56 @@ struct ConverterDashboardView: View {
 private struct HeroConversionCard: View {
     @ObservedObject var viewModel: CurrencyViewModel
     let isSubscribed: Bool
+    let palette: AppTheme.Palette
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Виджет онлайн", systemImage: "antenna.radiowaves.left.and.right")
+            Label(AppLocale.text(.heroStatusOnline), systemImage: "antenna.radiowaves.left.and.right")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(palette.textSecondary)
 
             if isSubscribed {
-                Label("Converter Pro активна", systemImage: "crown.fill")
+                Label(AppLocale.text(.heroStatusPro), systemImage: "crown.fill")
                     .font(.caption)
                     .padding(8)
-                    .background(Color.yellow.opacity(0.2), in: Capsule())
+                    .background(palette.chipBackground, in: Capsule())
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(viewModel.formattedResult)
                     .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .foregroundStyle(palette.textPrimary)
                     .minimumScaleFactor(0.7)
                 Text(viewModel.targetCurrency)
                     .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(palette.textSecondary)
             }
 
             Text(viewModel.formattedRate)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(palette.textSecondary)
 
             Divider()
 
             HStack {
                 Image(systemName: "sparkles.rectangle.stack.fill")
-                    .foregroundColor(.white)
+                    .foregroundColor(palette.textPrimary)
                     .padding(10)
-                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 12))
+                    .background(palette.chipBackground.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Веб/TV/банкомат")
+                    Text(AppLocale.text(.heroChannelTag))
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(palette.textSecondary)
                     Text(viewModel.heroCopy)
                         .font(.subheadline)
                         .fontWeight(.semibold)
+                        .foregroundStyle(palette.textPrimary)
                 }
             }
         }
         .padding(20)
         .background(
-            LinearGradient(colors: [Color.accentColor.opacity(0.15), Color(.systemBackground)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: palette.accentGradient + [palette.cardBackground], startPoint: .topLeading, endPoint: .bottomTrailing)
         )
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(alignment: .topTrailing) {
@@ -144,7 +150,7 @@ private struct HeroConversionCard: View {
                 Text(updated, style: .time)
                     .font(.caption2)
                     .padding(8)
-                    .background(.ultraThinMaterial, in: Capsule())
+                    .background(palette.secondaryCardBackground.opacity(0.7), in: Capsule())
                     .offset(x: -12, y: 12)
             }
         }
@@ -155,20 +161,22 @@ private struct HeroConversionCard: View {
 
 private struct AmountInputCard: View {
     @ObservedObject var viewModel: CurrencyViewModel
+    let palette: AppTheme.Palette
 
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Сумма")
+                    Text(AppLocale.text(.amountLabel))
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(palette.textSecondary)
                     TextField("0", text: Binding(
                         get: { viewModel.amountText },
                         set: { viewModel.updateAmount($0) }
                     ))
                     .keyboardType(.decimalPad)
                     .font(.title2.weight(.semibold))
+                    .foregroundStyle(palette.textPrimary)
                 }
 
                 Spacer()
@@ -183,17 +191,17 @@ private struct AmountInputCard: View {
                 .buttonStyle(.plain)
             }
 
-            CurrencyPickerRow(label: "Из", selection: viewModel.baseCurrency, options: viewModel.availableCurrencies) { code in
+            CurrencyPickerRow(label: AppLocale.text(.pickerFrom), selection: viewModel.baseCurrency, options: viewModel.availableCurrencies, palette: palette) { code in
                 viewModel.selectBase(code)
             }
 
-            CurrencyPickerRow(label: "В", selection: viewModel.targetCurrency, options: viewModel.availableCurrencies) { code in
+            CurrencyPickerRow(label: AppLocale.text(.pickerTo), selection: viewModel.targetCurrency, options: viewModel.availableCurrencies, palette: palette) { code in
                 viewModel.selectTarget(code)
             }
         }
         .padding(20)
-        .background(.background, in: RoundedRectangle(cornerRadius: 24))
-        .shadow(color: Color.black.opacity(0.04), radius: 12, x: 0, y: 8)
+        .background(palette.cardBackground, in: RoundedRectangle(cornerRadius: 24))
+        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 8)
     }
 }
 
@@ -201,13 +209,14 @@ private struct CurrencyPickerRow: View {
     let label: String
     let selection: String
     let options: [String]
+    let palette: AppTheme.Palette
     let didSelect: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label.uppercased())
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(palette.textSecondary)
 
             Menu {
                 ForEach(options, id: \.self) { code in
@@ -217,13 +226,14 @@ private struct CurrencyPickerRow: View {
                 HStack {
                     Text(selection)
                         .font(.title3.weight(.semibold))
+                        .foregroundStyle(palette.textPrimary)
                     Spacer()
                     Image(systemName: "chevron.down")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(palette.textSecondary)
                 }
                 .padding()
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                .background(palette.secondaryCardBackground, in: RoundedRectangle(cornerRadius: 16))
             }
         }
     }
@@ -231,6 +241,7 @@ private struct CurrencyPickerRow: View {
 
 private struct KeyboardFocusOverlay: View {
     @ObservedObject var viewModel: CurrencyViewModel
+    let palette: AppTheme.Palette
     var onDismiss: () -> Void
 
     @FocusState private var isAmountFieldFocused: Bool
@@ -245,57 +256,60 @@ private struct KeyboardFocusOverlay: View {
     var body: some View {
         VStack(spacing: 24) {
             HStack {
-                Label("Быстрый ввод", systemImage: "keyboard")
+                Label(AppLocale.text(.quickInputTitle), systemImage: "keyboard")
                     .font(.headline)
+                    .foregroundStyle(palette.textPrimary)
                 Spacer()
                 Button {
                     isAmountFieldFocused = false
                     onDismiss()
                 } label: {
-                    Label("Готово", systemImage: "keyboard.chevron.compact.down")
+                    Label(AppLocale.text(.overlayDone), systemImage: "keyboard.chevron.compact.down")
                         .labelStyle(.iconOnly)
                         .font(.title3)
                         .padding(10)
-                        .background(Color(.secondarySystemBackground), in: Circle())
+                        .background(palette.secondaryCardBackground, in: Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Скрыть клавиатуру")
+                .accessibilityLabel(AppLocale.text(.overlayDismissAccessibility))
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("Сумма")
+                Text(AppLocale.text(.amountLabel))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(palette.textSecondary)
                 TextField("0", text: amountBinding)
                     .keyboardType(.decimalPad)
                     .textInputAutocapitalization(.never)
                     .focused($isAmountFieldFocused)
                     .font(.system(size: 34, weight: .semibold, design: .rounded))
-                Text("Базовая валюта — \(viewModel.baseCurrency)")
+                    .foregroundStyle(palette.textPrimary)
+                Text(AppLocale.text(.overlayBaseCurrency, viewModel.baseCurrency))
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(palette.textSecondary)
             }
             .padding(22)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .background(palette.overlayCard, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
             .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 8)
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("Конвертация")
+                Text(AppLocale.text(.overlayConversion))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(palette.textSecondary)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(viewModel.formattedResult)
                         .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .foregroundStyle(palette.textPrimary)
                     Text(viewModel.targetCurrency)
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(palette.textSecondary)
                 }
                 Text(viewModel.formattedRate)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(palette.textSecondary)
             }
             .padding(22)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .background(palette.overlayCard, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
             .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 8)
 
             Spacer()
@@ -304,11 +318,7 @@ private struct KeyboardFocusOverlay: View {
         .padding(.top, 40)
         .padding(.bottom, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(
-            Color(.systemBackground)
-                .opacity(0.96)
-                .ignoresSafeArea()
-        )
+        .background(palette.overlayBackground.ignoresSafeArea())
         .onAppear {
             DispatchQueue.main.async {
                 isAmountFieldFocused = true

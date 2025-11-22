@@ -14,7 +14,7 @@ enum CurrencyServiceError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            return "Не удалось обработать ответ сервера."
+            return AppLocale.text(.currencyInvalidResponse)
         case .message(let text):
             return text
         }
@@ -48,7 +48,7 @@ final class CurrencyService {
     func fetchTrend(base: String, target: String, days: Int) async throws -> [RatePoint] {
         guard let endDate = calendar.date(byAdding: .day, value: -1, to: Date()),
               let startDate = calendar.date(byAdding: .day, value: -days, to: endDate) else {
-            throw CurrencyServiceError.message("Не удалось подготовить диапазон дат.")
+            throw CurrencyServiceError.message(AppLocale.text(.currencyDateRange))
         }
 
         if let series = try? await fetchHostTimeseries(base: base, target: target, start: startDate, end: endDate) {

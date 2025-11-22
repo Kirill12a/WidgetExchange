@@ -12,43 +12,46 @@ struct OnboardingView: View {
 
     private let slides: [OnboardingSlide] = [
         OnboardingSlide(
-            title: "Конвертер прямо в виджете",
-            description: "Добавь виджет на сайт, POS или инфопанель — курсы обновляются каждые 60 секунд и принимают запросы извне.",
+            title: AppLocale.text(.onboardingSlide1Title),
+            description: AppLocale.text(.onboardingSlide1Description),
             accent: Color.purple,
             icon: "rectangle.connected.to.line.below.fill",
-            footnote: "Генерируй токены и ограничивай пары, чтобы не бояться утечек."
+            footnote: AppLocale.text(.onboardingSlide1Footnote)
         ),
         OnboardingSlide(
-            title: "Умные подсказки",
-            description: "Создавай пресеты конверсий, лимиты и push-оповещения для команды.",
+            title: AppLocale.text(.onboardingSlide2Title),
+            description: AppLocale.text(.onboardingSlide2Description),
             accent: Color.cyan,
             icon: "bolt.horizontal.circle.fill",
-            footnote: "Поддержка 30+ валют и ночное кэширование, чтобы приложение работало офлайн."
+            footnote: AppLocale.text(.onboardingSlide2Footnote)
         ),
         OnboardingSlide(
-            title: "Pro-подписка",
-            description: "Убирай рекламу, получай веб-дэшборд, CSV-экспорт и доступ к истории за год.",
+            title: AppLocale.text(.onboardingSlide3Title),
+            description: AppLocale.text(.onboardingSlide3Description),
             accent: Color.orange,
             icon: "crown.fill",
-            footnote: "Две недели бесплатно — дальше дешевле, чем чашка кофе."
+            footnote: AppLocale.text(.onboardingSlide3Footnote)
         )
     ]
 
     @State private var selectedIndex = 0
+    @Namespace private var ctaNamespace
 
     var body: some View {
+        let accent = slides[selectedIndex].accent
         ZStack {
             LinearGradient(
-                colors: [slides[selectedIndex].accent.opacity(0.15), Color(.systemBackground)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                colors: [accent.opacity(0.2), Color(.systemBackground)],
+                startPoint: selectedIndex.isMultiple(of: 2) ? .topLeading : .bottomTrailing,
+                endPoint: selectedIndex.isMultiple(of: 2) ? .bottomTrailing : .topLeading
             )
             .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.65), value: selectedIndex)
 
             VStack(spacing: 32) {
                 TabView(selection: $selectedIndex) {
                     ForEach(Array(slides.enumerated()), id: \.element.id) { index, slide in
-                        OnboardingSlideView(slide: slide)
+                        OnboardingSlideView(slide: slide, isActive: selectedIndex == index)
                             .tag(index)
                             .padding(.horizontal, 24)
                     }
@@ -74,31 +77,40 @@ struct OnboardingView: View {
                             onFinish()
                         }
                     } label: {
-                        Text(selectedIndex == slides.count - 1 ? "Начать конвертировать" : "Дальше")
+                        Text(selectedIndex == slides.count - 1 ? AppLocale.text(.onboardingPrimaryFinish) : AppLocale.text(.onboardingPrimaryNext))
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(slides[selectedIndex].accent)
+                            .background(accent)
                             .foregroundColor(.white)
                             .cornerRadius(16)
+                            .matchedGeometryEffect(id: "cta", in: ctaNamespace)
                     }
+                    .animation(.spring(response: 0.45, dampingFraction: 0.85), value: selectedIndex)
 
-                    if selectedIndex < slides.count - 1 {
-                        Button("Пропустить виджет-тур") {
-                            onFinish()
+                    ZStack {
+                        if selectedIndex < slides.count - 1 {
+                            Button(AppLocale.text(.onboardingSkip)) {
+                                onFinish()
+                            }
+                            .foregroundColor(.secondary)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
-                        .foregroundColor(.secondary)
                     }
+                    .animation(.spring(response: 0.45, dampingFraction: 0.85), value: selectedIndex)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
             }
+            .animation(.spring(response: 0.45, dampingFraction: 0.85), value: selectedIndex)
         }
     }
 }
 
 private struct OnboardingSlideView: View {
     let slide: OnboardingSlide
+    let isActive: Bool
+    @State private var iconPulse = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -112,26 +124,33 @@ private struct OnboardingSlideView: View {
                                 .fill(slide.accent.opacity(0.18))
                                 .frame(width: 220, height: 220)
                                 .offset(x: -20, y: -40)
+                                .scaleEffect(iconPulse ? 1.05 : 0.95)
+                                .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: iconPulse)
                             Circle()
                                 .strokeBorder(slide.accent.opacity(0.3), lineWidth: 2)
                                 .frame(width: 180, height: 180)
                                 .offset(x: 30, y: 10)
+                                .scaleEffect(iconPulse ? 1.1 : 0.9)
+                                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: iconPulse)
                             Image(systemName: slide.icon)
                                 .font(.system(size: 64, weight: .semibold))
                                 .foregroundColor(slide.accent)
                                 .padding()
                                 .background(.ultraThinMaterial, in: Circle())
+                                .shadow(color: slide.accent.opacity(0.4), radius: iconPulse ? 18 : 8, x: 0, y: 8)
+                                .scaleEffect(isActive ? 1 : 0.9)
+                                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isActive)
                         }
                     )
 
                 VStack(alignment: .leading, spacing: 12) {
-                    Label("Главная фича", systemImage: "sparkles")
+                    Label(AppLocale.text(.onboardingFeatureTag), systemImage: "sparkles")
                         .font(.footnote)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(slide.accent.opacity(0.15), in: Capsule())
 
-                    Text("Виджет принимает POST запрос и отвечает конверсией <3 сек.")
+                    Text(AppLocale.text(.onboardingFeatureDescription))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -159,6 +178,17 @@ private struct OnboardingSlideView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .scaleEffect(isActive ? 1 : 0.97)
+        .opacity(isActive ? 1 : 0.8)
+        .animation(.spring(response: 0.55, dampingFraction: 0.85), value: isActive)
+        .onAppear {
+            iconPulse = true
+        }
+        .onChange(of: isActive) { active in
+            if active {
+                iconPulse = true
+            }
         }
     }
 }

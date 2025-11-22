@@ -67,17 +67,19 @@ struct WidgetFXWidgetEntryView: View {
 @available(iOSApplicationExtension 17.0, *)
 private struct WidgetFXLargeView: View {
     let entry: WidgetFXEntry
+    @Environment(\.colorScheme) private var colorScheme
+    private var palette: WidgetTheme.Palette { WidgetTheme.palette(for: colorScheme) }
 
     var body: some View {
         ZStack {
-            WidgetBackground()
+            WidgetBackground(palette: palette)
                 .padding(4)
             VStack(alignment: .leading, spacing: WidgetTheme.metrics.sectionSpacing) {
-                AmountSummaryCard(amountText: entry.snapshot.amountText, currency: entry.snapshot.baseCurrency)
+                AmountSummaryCard(amountText: entry.snapshot.amountText, currency: entry.snapshot.baseCurrency, palette: palette)
                     // Выносим ключевую сумму в отдельную карточку, чтобы взгляд сразу находил главный показатель.
-                ConversionSummaryCard(snapshot: entry.snapshot)
+                ConversionSummaryCard(snapshot: entry.snapshot, palette: palette)
                     // Показываем актуальный таргет из снапшота, избегая рассинхрона с приложением.
-                KeypadMockView(amountText: entry.snapshot.amountText)
+                KeypadMockView(amountText: entry.snapshot.amountText, palette: palette)
             }
             .padding(WidgetTheme.metrics.contentPadding)
         }
@@ -96,8 +98,8 @@ struct WidgetFXWidget: Widget {
             WidgetFXWidgetEntryView(entry: entry)
                 .containerBackground(.clear, for: .widget)
         }
-        .configurationDisplayName("Widget FX конвертер")
-        .description("Набирай сумму и смотри конверсию в пяти валютах.")
+        .configurationDisplayName(LocalizedStringKey(AppLocale.text(.widgetDisplayName)))
+        .description(LocalizedStringKey(AppLocale.text(.widgetDescription)))
         .supportedFamilies([.systemLarge])
         .contentMarginsDisabled()
     }
@@ -109,19 +111,20 @@ struct WidgetFXWidget: Widget {
 private struct AmountSummaryCard: View {
     let amountText: String
     let currency: String
+    let palette: WidgetTheme.Palette
 
     var body: some View {
-        WidgetSurfaceCard {
+        WidgetSurfaceCard(palette: palette) {
             VStack(alignment: .leading, spacing: WidgetTheme.metrics.cardSpacing) {
-                WidgetSectionHeader(title: "Сумма", subtitle: "Базовая валюта")
+                WidgetSectionHeader(title: AppLocale.text(.widgetAmountTitle), subtitle: AppLocale.text(.widgetBaseSubtitle), palette: palette)
                 HStack(alignment: .lastTextBaseline, spacing: 6) {
                     Text(amountText)
                         .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .foregroundStyle(WidgetTheme.palette.textPrimary)
+                        .foregroundStyle(palette.textPrimary)
                         .minimumScaleFactor(0.7)
                         .lineLimit(1)
                     Spacer(minLength: 8)
-                    CurrencyTag(text: currency)
+                    CurrencyTag(text: currency, palette: palette)
                 }
             }
         }
@@ -131,6 +134,7 @@ private struct AmountSummaryCard: View {
 @available(iOSApplicationExtension 17.0, *)
 private struct ConversionSummaryCard: View {
     let snapshot: ConverterSnapshot
+    let palette: WidgetTheme.Palette
 
     private var convertedText: String {
         snapshot.converted.formatted(.number.precision(.fractionLength(2)))
@@ -141,21 +145,21 @@ private struct ConversionSummaryCard: View {
     }
 
     var body: some View {
-        WidgetSurfaceCard(background: WidgetTheme.palette.surfaceSecondary) {
+        WidgetSurfaceCard(background: palette.surfaceSecondary, palette: palette) {
             VStack(alignment: .leading, spacing: WidgetTheme.metrics.cardSpacing) {
-                WidgetSectionHeader(title: "Конвертация", subtitle: nil)
+                WidgetSectionHeader(title: AppLocale.text(.widgetConversionTitle), subtitle: nil, palette: palette)
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(convertedText)
                         .font(.system(size: 20, weight: .semibold, design: .rounded))
-                        .foregroundStyle(WidgetTheme.palette.textPrimary)
+                        .foregroundStyle(palette.textPrimary)
                         .lineLimit(1)
                     Spacer(minLength: 6)
-                    CurrencyTag(text: snapshot.targetCurrency)
+                    CurrencyTag(text: snapshot.targetCurrency, palette: palette)
                 }
-                WidgetDivider()
-                Text("1 \(snapshot.baseCurrency) = \(rateText) \(snapshot.targetCurrency)")
+                WidgetDivider(palette: palette)
+                Text(AppLocale.text(.rateFormatted, snapshot.baseCurrency, rateText, snapshot.targetCurrency))
                     .font(.caption)
-                    .foregroundStyle(WidgetTheme.palette.textMuted)
+                    .foregroundStyle(palette.textMuted)
             }
         }
     }
@@ -164,6 +168,7 @@ private struct ConversionSummaryCard: View {
 @available(iOSApplicationExtension 17.0, *)
 private struct KeypadMockView: View {
     let amountText: String
+    let palette: WidgetTheme.Palette
     private let keys = [
         [WidgetKeypadButton.digit1, .digit2, .digit3],
         [.digit4, .digit5, .digit6],
@@ -176,8 +181,9 @@ private struct KeypadMockView: View {
     }
 
     var body: some View {
-        WidgetSurfaceCard(background: WidgetTheme.palette.surfaceSecondary) {
+        WidgetSurfaceCard(background: palette.surfaceSecondary, palette: palette) {
             VStack(alignment: .leading, spacing: WidgetTheme.metrics.cardSpacing) {
+                WidgetSectionHeader(title: AppLocale.text(.widgetKeypadTitle), subtitle: nil, palette: palette)
                 LazyVGrid(columns: columns, spacing: WidgetTheme.metrics.gridSpacing) {
                     ForEach(Array(keys.enumerated()), id: \.offset) { rowIndex, row in
                         ForEach(row, id: \.self) { button in
@@ -185,7 +191,7 @@ private struct KeypadMockView: View {
                                 Text(button.symbol)
                                     .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(WidgetKeypadButtonStyle(tone: WidgetTheme.palette.keypadTone(for: button, row: rowIndex)))
+                            .buttonStyle(WidgetKeypadButtonStyle(tone: palette.keypadTone(for: button, row: rowIndex)))
 #if os(iOS)
                             .hoverEffect(.lift)
 #endif
@@ -198,9 +204,11 @@ private struct KeypadMockView: View {
 }
 
 private struct WidgetDivider: View {
+    let palette: WidgetTheme.Palette
+
     var body: some View {
         Rectangle()
-            .fill(WidgetTheme.palette.divider)
+            .fill(palette.divider)
             .frame(height: 1)
             .frame(maxWidth: .infinity)
     }
@@ -208,20 +216,21 @@ private struct WidgetDivider: View {
 
 private struct CurrencyTag: View {
     let text: String
+    let palette: WidgetTheme.Palette
 
     var body: some View {
         Text(text)
             .font(.caption.weight(.semibold))
-            .foregroundStyle(WidgetTheme.palette.textPrimary)
+            .foregroundStyle(palette.textPrimary)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(WidgetTheme.palette.accentSecondary.opacity(0.25))
+                    .fill(palette.accentSecondary.opacity(0.25))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(WidgetTheme.palette.accentSecondary.opacity(0.35), lineWidth: 1)
+                    .stroke(palette.accentSecondary.opacity(0.35), lineWidth: 1)
             )
     }
 }
@@ -229,17 +238,18 @@ private struct CurrencyTag: View {
 private struct WidgetSectionHeader: View {
     let title: String
     var subtitle: String?
+    let palette: WidgetTheme.Palette
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title.uppercased())
                 .font(.caption2)
                 .kerning(0.6)
-                .foregroundStyle(WidgetTheme.palette.textSecondary)
+                .foregroundStyle(palette.textSecondary)
             if let subtitle {
                 Text(subtitle)
                     .font(.footnote)
-                    .foregroundStyle(WidgetTheme.palette.textMuted)
+                    .foregroundStyle(palette.textMuted)
             }
         }
     }
@@ -250,9 +260,9 @@ private struct WidgetSurfaceCard<Content: View>: View {
     var border: Color
     let content: Content
 
-    init(background: Color = WidgetTheme.palette.surfacePrimary, border: Color = WidgetTheme.palette.surfaceBorder, @ViewBuilder content: () -> Content) {
-        self.background = background
-        self.border = border
+    init(background: Color? = nil, border: Color? = nil, palette: WidgetTheme.Palette, @ViewBuilder content: () -> Content) {
+        self.background = background ?? palette.surfacePrimary
+        self.border = border ?? palette.surfaceBorder
         self.content = content()
     }
 
@@ -272,22 +282,24 @@ private struct WidgetSurfaceCard<Content: View>: View {
 }
 
 private struct WidgetBackground: View {
+    let palette: WidgetTheme.Palette
+
     var body: some View {
         RoundedRectangle(cornerRadius: WidgetTheme.metrics.containerCorner, style: .continuous)
             .fill(
                 LinearGradient(
-                    colors: [WidgetTheme.palette.backgroundTop, WidgetTheme.palette.backgroundBottom],
+                    colors: [palette.backgroundTop, palette.backgroundBottom],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
             .overlay(
                 RoundedRectangle(cornerRadius: WidgetTheme.metrics.containerCorner, style: .continuous)
-                    .stroke(WidgetTheme.palette.surfaceHighlight.opacity(0.3), lineWidth: 1)
+                    .stroke(palette.surfaceHighlight.opacity(0.3), lineWidth: 1)
             )
             .overlay(
                 RadialGradient(
-                    colors: [WidgetTheme.palette.backgroundAccent.opacity(0.35), .clear],
+                    colors: [palette.backgroundAccent.opacity(0.35), .clear],
                     center: .topLeading,
                     startRadius: 20,
                     endRadius: 160
@@ -359,7 +371,7 @@ private struct UnsupportedSizeView: View {
         VStack {
             Image(systemName: "rectangle.split.3x1.fill")
                 .font(.largeTitle)
-            Text("Добавь большой виджет\nв Стеке, чтобы увидеть клавиатуру.")
+            Text(AppLocale.text(.widgetUnsupported))
                 .font(.footnote)
                 .multilineTextAlignment(.center)
         }

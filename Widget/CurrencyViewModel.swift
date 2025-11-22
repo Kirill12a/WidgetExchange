@@ -29,9 +29,9 @@ final class CurrencyViewModel: ObservableObject {
 
     var heroCopy: String {
         if widgetLinks.count > 2 {
-            return "Виджеты рассылают конверсии за \(widgetLinks.count) сценария."
+            return AppLocale.text(.heroCopyMany, widgetLinks.count)
         }
-        return "Передавайте курсы прямо из виджета на сайты и панели мониторинга."
+        return AppLocale.text(.heroCopyDefault)
     }
 
     var formattedResult: String {
@@ -40,8 +40,9 @@ final class CurrencyViewModel: ObservableObject {
     }
 
     var formattedRate: String {
-        guard let rate = latestRates?.rates[targetCurrency] else { return "—" }
-        return "1 \(baseCurrency) = \(rate.formatted(.number.precision(.fractionLength(4)))) \(targetCurrency)"
+        guard let rate = latestRates?.rates[targetCurrency] else { return AppLocale.text(.rateUnavailable) }
+        let rateText = rate.formatted(.number.precision(.fractionLength(4)))
+        return AppLocale.text(.rateFormatted, baseCurrency, rateText, targetCurrency)
     }
 
     private(set) var latestRates: CurrencyRates?
@@ -87,7 +88,7 @@ final class CurrencyViewModel: ObservableObject {
             cache.saveRates(rates)
             updateConversion()
         } catch {
-            errorMessage = "Не удалось обновить курс: \(error.localizedDescription). Показаны данные из кэша."
+        errorMessage = AppLocale.text(.errorRatesUnavailable, error.localizedDescription)
             if let cachedRates = cache.loadRates(), cachedRates.base == baseCurrency {
                 latestRates = cachedRates
                 lastUpdated = cachedRates.date

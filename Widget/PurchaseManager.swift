@@ -54,7 +54,7 @@ final class PurchaseManager: ObservableObject {
             ])
             infoMessage = nil
         } catch {
-            infoMessage = "Не удалось загрузить подписки: \(error.localizedDescription)"
+            infoMessage = AppLocale.text(.purchaseLoadError, error.localizedDescription)
         }
     }
 
@@ -74,8 +74,8 @@ final class PurchaseManager: ObservableObject {
             case .pending:
                 purchaseState = .idle
             @unknown default:
-                purchaseState = .failed("Неизвестный статус покупки")
-            }
+                purchaseState = .failed(AppLocale.text(.purchaseUnknownStatus))
+        }
         } catch {
             purchaseState = .failed(error.localizedDescription)
         }
@@ -126,7 +126,7 @@ final class PurchaseManager: ObservableObject {
         var errorDescription: String? {
             switch self {
             case .unverified:
-                return "Покупка не верифицирована."
+                return AppLocale.text(.purchaseUnverified)
             }
         }
     }

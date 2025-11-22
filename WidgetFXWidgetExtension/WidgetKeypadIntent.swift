@@ -9,7 +9,7 @@ import AppIntents
 
 struct WidgetKeypadIntent: AppIntent {
     static var title: LocalizedStringResource = "Widget Keypad Input"
-    static var description = IntentDescription("Обновляет поле ввода прямо в виджете.")
+    static var description = IntentDescription("Instantly updates widget input field.")
 
     @Parameter(title: "Button")
     var button: WidgetKeypadButton
@@ -28,5 +28,5 @@ struct WidgetKeypadIntent: AppIntent {
 
 struct WidgetFXConfigurationIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "Widget FX"
-    static var description = IntentDescription("Конфигурация виджета Widget FX")
+    static var description = IntentDescription("Widget FX configuration")
 }
