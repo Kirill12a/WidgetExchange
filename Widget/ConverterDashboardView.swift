@@ -11,7 +11,6 @@ import StoreKit
 struct ConverterDashboardView: View {
     @ObservedObject var viewModel: CurrencyViewModel
     @EnvironmentObject private var purchaseManager: PurchaseManager
-    @State private var isEditingPresets = false
 
     var body: some View {
         NavigationStack {
@@ -24,35 +23,6 @@ struct ConverterDashboardView: View {
                     HeroConversionCard(viewModel: viewModel, isSubscribed: purchaseManager.isSubscribed)
 
                     AmountInputCard(viewModel: viewModel)
-
-                    QuickPairsView { base, target in
-                        viewModel.selectBase(base)
-                        viewModel.selectTarget(target)
-                    }
-
-                    RateTrendCard(viewModel: viewModel)
-
-                    if purchaseManager.isSubscribed {
-                        ProStatusCard()
-                    } else {
-                        AdBannerView(
-                            title: "Нативный баннер",
-                            message: "Брендированные размещения рядом с калькулятором. CTR выше на 43%.",
-                            accent: .indigo,
-                            cta: "Подключить"
-                        )
-                    }
-
-                    SubscriptionCard(purchaseManager: purchaseManager)
-
-                    if !purchaseManager.isSubscribed {
-                        AdBannerView(
-                            title: "Баннер в аналитике",
-                            message: "Мягкий показ во вкладке графиков. Алгоритм не раздражает частых пользователей.",
-                            accent: .orange,
-                            cta: "Показать пример"
-                        )
-                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 32)
@@ -77,10 +47,6 @@ struct ConverterDashboardView: View {
             .refreshable {
                 await viewModel.refreshRates()
                 await viewModel.refreshTrend()
-            }
-            .sheet(isPresented: $isEditingPresets) {
-                WidgetPresetEditorSheet(viewModel: viewModel)
-                    .presentationDetents([.large])
             }
         }
     }
@@ -230,93 +196,6 @@ private struct CurrencyPickerRow: View {
     }
 }
 
-// MARK: - Quick pairs
-
-private struct QuickPairsView: View {
-    let action: (String, String) -> Void
-
-    private let quickPairs: [(title: String, base: String, target: String, context: String)] = [
-        ("Виджет магазина", "USD", "RUB", "Black Friday"),
-        ("POS Казахстан", "EUR", "KZT", "Сеть NB"),
-        ("Дубай бутик", "USD", "AED", "VIP lounge")
-    ]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Быстрые сценарии")
-                .font(.headline)
-
-            ForEach(quickPairs, id: \.title) { pair in
-                Button {
-                    action(pair.base, pair.target)
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(pair.title)
-                                .fontWeight(.semibold)
-                            Text("\(pair.base) → \(pair.target)")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Text(pair.context)
-                            .font(.footnote)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color(.systemGray6), in: Capsule())
-                    }
-                    .padding()
-                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-}
-
-// MARK: - Trend card
-
-private struct RateTrendCard: View {
-    @ObservedObject var viewModel: CurrencyViewModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("7 дней динамики")
-                        .font(.headline)
-                    Text("Данные кэшируются на бэкенде, чтобы виджеты отвечали за 80 мс.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Label("Pro insight", systemImage: "chart.line.uptrend.xyaxis")
-                    .font(.caption)
-                    .padding(8)
-                    .background(Color(.systemGray6), in: Capsule())
-            }
-
-            SparklineView(points: viewModel.chartSeries)
-                .frame(height: 140)
-
-            HStack {
-                VStack(alignment: .leading) {
-                    Text("Формат экспорта")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text("CSV • JSON • Webhook")
-                        .font(.subheadline)
-                }
-                Spacer()
-                Button("Экспортировать") {}
-                    .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding(20)
-        .background(.background, in: RoundedRectangle(cornerRadius: 24))
-    }
-}
-
 private struct SparklineView: View {
     let points: [RatePoint]
 
@@ -381,30 +260,6 @@ private struct SparklineView: View {
     }
 }
 
-private struct WidgetSnippetView: View {
-    let endpoint: String
-    let from: String
-    let to: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("curl пример")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text("""
-            curl -X POST \\
-              \(endpoint) \\
-              -d '{ "from": "\(from)", "to": "\(to)", "amount": 100 }'
-            """)
-            .font(.system(.footnote, design: .monospaced))
-            .padding(12)
-            .background(Color(.black).opacity(0.85), in: RoundedRectangle(cornerRadius: 12))
-            .foregroundColor(.green)
-        }
-    }
-}
-
 private struct FlexibleChipGrid: View {
     let presets: [WidgetPreset]
     let base: String
@@ -456,207 +311,6 @@ private struct WidgetPresetChipView: View {
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
         .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 16))
-    }
-}
-
-private struct WidgetPresetEditorSheet: View {
-    @ObservedObject var viewModel: CurrencyViewModel
-    @Environment(\.dismiss) private var dismiss
-    @State private var localPresets: [WidgetPreset]
-
-    init(viewModel: CurrencyViewModel) {
-        self.viewModel = viewModel
-        _localPresets = State(initialValue: viewModel.widgetPresets)
-    }
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("Суммы") {
-                    ForEach($localPresets) { $preset in
-                        VStack(alignment: .leading, spacing: 8) {
-                            TextField("Название", text: $preset.title)
-                                .textInputAutocapitalization(.words)
-                            TextField("Сумма", value: $preset.amount, format: .number.precision(.fractionLength(0...2)))
-                                .keyboardType(.decimalPad)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                    .onDelete { offsets in
-                        localPresets.remove(atOffsets: offsets)
-                    }
-
-                    Button {
-                        localPresets.append(WidgetPreset(title: "Новая сумма", amount: 10))
-                    } label: {
-                        Label("Добавить сумму", systemImage: "plus.circle")
-                    }
-                    .disabled(localPresets.count >= 6)
-                }
-
-                Section {
-                    Button("Сбросить на дефолт") {
-                        localPresets = RatesCache.shared.defaultPresets
-                    }
-                }
-            }
-            .navigationTitle("Виджет-суммы")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить") {
-                        let cleaned = localPresets
-                            .map { WidgetPreset(id: $0.id, title: $0.title.isEmpty ? "\($0.amount)" : $0.title, amount: max(0, $0.amount)) }
-                            .filter { $0.amount > 0.01 }
-                        viewModel.updateWidgetPresets(cleaned)
-                        dismiss()
-                    }
-                    .disabled(localPresets.isEmpty)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Ads + subscription
-
-private struct AdBannerView: View {
-    let title: String
-    let message: String
-    let accent: Color
-    let cta: String
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(title)
-                    .font(.headline)
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Button(cta) {}
-                    .font(.caption)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(accent.opacity(0.15), in: Capsule())
-            }
-            Spacer()
-            Image(systemName: "megaphone.fill")
-                .font(.largeTitle)
-                .foregroundStyle(accent)
-        }
-        .padding()
-        .background(accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 24))
-    }
-}
-
-private struct ProStatusCard: View {
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "waveform.path.ecg.rectangle")
-                .font(.title)
-                .foregroundColor(.green)
-                .padding(12)
-                .background(Color.green.opacity(0.15), in: RoundedRectangle(cornerRadius: 16))
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Реклама отключена")
-                    .font(.headline)
-                Text("Converter Pro держит API и виджеты в приоритете. Слоты на экране свободны.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(20)
-        .background(.background, in: RoundedRectangle(cornerRadius: 24))
-    }
-}
-
-private struct SubscriptionCard: View {
-    @ObservedObject var purchaseManager: PurchaseManager
-    let perks = [
-        "Без рекламы и лимитов",
-        "Безлимитные виджеты и веб-дэшборд",
-        "Экспорт истории и push на пороговые значения"
-    ]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Converter Pro")
-                        .font(.title2.weight(.bold))
-                    Text(purchaseSubtitle)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Image(systemName: purchaseManager.isSubscribed ? "checkmark.seal.fill" : "crown.fill")
-                    .foregroundColor(purchaseManager.isSubscribed ? .green : .yellow)
-                    .font(.title)
-            }
-
-            ForEach(perks, id: \.self) { perk in
-                Label(perk, systemImage: "checkmark.seal.fill")
-                    .symbolRenderingMode(.multicolor)
-            }
-
-            if purchaseManager.isSubscribed {
-                Text("Подписка уже активна на всех устройствах. Управляйте в настройках Apple ID.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            } else {
-                SubscriptionProductList(purchaseManager: purchaseManager)
-            }
-        }
-        .padding(20)
-        .background(.background, in: RoundedRectangle(cornerRadius: 24))
-        .shadow(color: Color.black.opacity(0.05), radius: 18, x: 0, y: 12)
-    }
-
-    private var purchaseSubtitle: String {
-        if purchaseManager.isSubscribed {
-            return "Спасибо за поддержку! Converter Pro активен."
-        }
-        return "14 дней бесплатно, потом ₽399 / мес или ₽3 499 / год."
-    }
-}
-
-private struct SubscriptionProductList: View {
-    @ObservedObject var purchaseManager: PurchaseManager
-
-    var body: some View {
-        VStack(spacing: 12) {
-            if let info = purchaseManager.infoMessage {
-                Text(info)
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            if purchaseManager.products.isEmpty {
-                PlaceholderPlanRow(title: "Месяц", price: "₽399", description: "Для тестов и коротких спринтов.")
-                PlaceholderPlanRow(title: "Год", price: "₽3 499", description: "Экономия 27% и бонусные алерты.")
-            } else {
-                ForEach(purchaseManager.products, id: \.id) { product in
-                    ProductRow(product: product, purchaseManager: purchaseManager)
-                }
-            }
-
-            HStack(spacing: 12) {
-                Button("Восстановить покупки") {
-                    Task { await purchaseManager.restore() }
-                }
-                .buttonStyle(.bordered)
-
-                if case .failed(let message) = purchaseManager.purchaseState {
-                    Text(message)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
-            }
-        }
     }
 }
 
