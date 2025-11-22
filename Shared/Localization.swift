@@ -40,6 +40,8 @@ enum AppLocale {
         case onboardingSlide3Footnote = "onboarding.slide3.footnote"
         case onboardingFeatureTag = "onboarding.feature.tag"
         case onboardingFeatureDescription = "onboarding.feature.description"
+        case onboardingWidgetBadge = "onboarding.widget.badge"
+        case onboardingOfflineBadge = "onboarding.offline.badge"
         case onboardingPrimaryNext = "onboarding.primary.next"
         case onboardingPrimaryFinish = "onboarding.primary.finish"
         case onboardingSkip = "onboarding.skip"
@@ -58,13 +60,8 @@ enum AppLocale {
     }
 
     static func text(_ key: Key, _ args: CVarArg...) -> String {
-        let languageCode: String
-        if #available(iOS 16.0, *) {
-            languageCode = Locale.current.language.languageCode?.identifier ?? Locale.current.identifier
-        } else {
-            languageCode = Locale.current.languageCode ?? Locale.current.identifier
-        }
-        let normalized = languageCode.starts(with: "ru") ? "ru" : "en"
+        let preferred = Locale.preferredLanguages.first ?? Locale.current.identifier
+        let normalized = preferred.lowercased().hasPrefix("ru") ? "ru" : "en"
         let template = translations[normalized]?[key.rawValue] ?? translations["en"]?[key.rawValue] ?? key.rawValue
         guard !args.isEmpty else { return template }
         return String(format: template, locale: Locale(identifier: normalized), arguments: args)
@@ -103,6 +100,8 @@ enum AppLocale {
             Key.onboardingSlide3Footnote.rawValue: "Portrait and landscape states are tuned for thumb reach and kiosk displays.",
             Key.onboardingFeatureTag.rawValue: "Built for operators",
             Key.onboardingFeatureDescription.rawValue: "All controls sit within the thumb zone and respond with subtle haptics.",
+            Key.onboardingWidgetBadge.rawValue: "Widget preview",
+            Key.onboardingOfflineBadge.rawValue: "Offline cache active",
             Key.onboardingPrimaryNext.rawValue: "Continue",
             Key.onboardingPrimaryFinish.rawValue: "Start converting",
             Key.onboardingSkip.rawValue: "Skip tour",
@@ -151,6 +150,8 @@ enum AppLocale {
             Key.onboardingSlide3Footnote.rawValue: "Портретные и альбомные состояния оптимизированы под работу одной рукой и на киосках.",
             Key.onboardingFeatureTag.rawValue: "Для операторов",
             Key.onboardingFeatureDescription.rawValue: "Все контролы в зоне большого пальца и откликаются тактильно.",
+            Key.onboardingWidgetBadge.rawValue: "Виджет сейчас",
+            Key.onboardingOfflineBadge.rawValue: "Офлайн-кэш обновлён",
             Key.onboardingPrimaryNext.rawValue: "Дальше",
             Key.onboardingPrimaryFinish.rawValue: "Начать конвертировать",
             Key.onboardingSkip.rawValue: "Пропустить тур",
