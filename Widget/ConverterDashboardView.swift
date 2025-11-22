@@ -7,25 +7,46 @@
 
 import SwiftUI
 import StoreKit
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct ConverterDashboardView: View {
     @ObservedObject var viewModel: CurrencyViewModel
     @EnvironmentObject private var purchaseManager: PurchaseManager
+    @State private var isKeyboardVisible = false
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    if let errorMessage = viewModel.errorMessage {
-                        OfflineBanner(message: errorMessage)
+            ZStack {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        if let errorMessage = viewModel.errorMessage {
+                            OfflineBanner(message: errorMessage)
+                        }
+
+                        HeroConversionCard(viewModel: viewModel, isSubscribed: purchaseManager.isSubscribed)
+
+                        AmountInputCard(viewModel: viewModel)
                     }
-
-                    HeroConversionCard(viewModel: viewModel, isSubscribed: purchaseManager.isSubscribed)
-
-                    AmountInputCard(viewModel: viewModel)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 32)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 32)
+                .opacity(isKeyboardVisible ? 0 : 1)
+                .allowsHitTesting(!isKeyboardVisible)
+
+                if isKeyboardVisible {
+                    KeyboardFocusOverlay(viewModel: viewModel) {
+#if canImport(UIKit)
+                        dismissKeyboardGlobally()
+#endif
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            isKeyboardVisible = false
+                        }
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(1)
+                }
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Widget FX")
@@ -49,6 +70,18 @@ struct ConverterDashboardView: View {
                 await viewModel.refreshTrend()
             }
         }
+#if canImport(UIKit)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                isKeyboardVisible = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                isKeyboardVisible = false
+            }
+        }
+#endif
     }
 }
 
@@ -191,6 +224,94 @@ private struct CurrencyPickerRow: View {
                 }
                 .padding()
                 .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+            }
+        }
+    }
+}
+
+private struct KeyboardFocusOverlay: View {
+    @ObservedObject var viewModel: CurrencyViewModel
+    var onDismiss: () -> Void
+
+    @FocusState private var isAmountFieldFocused: Bool
+
+    private var amountBinding: Binding<String> {
+        Binding(
+            get: { viewModel.amountText },
+            set: { viewModel.updateAmount($0) }
+        )
+    }
+
+    var body: some View {
+        VStack(spacing: 24) {
+            HStack {
+                Label("Быстрый ввод", systemImage: "keyboard")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    isAmountFieldFocused = false
+                    onDismiss()
+                } label: {
+                    Label("Готово", systemImage: "keyboard.chevron.compact.down")
+                        .labelStyle(.iconOnly)
+                        .font(.title3)
+                        .padding(10)
+                        .background(Color(.secondarySystemBackground), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Скрыть клавиатуру")
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Сумма")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("0", text: amountBinding)
+                    .keyboardType(.decimalPad)
+                    .textInputAutocapitalization(.never)
+                    .focused($isAmountFieldFocused)
+                    .font(.system(size: 34, weight: .semibold, design: .rounded))
+                Text("Базовая валюта — \(viewModel.baseCurrency)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(22)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 8)
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Конвертация")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(viewModel.formattedResult)
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                    Text(viewModel.targetCurrency)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                Text(viewModel.formattedRate)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(22)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 8)
+
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 40)
+        .padding(.bottom, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(
+            Color(.systemBackground)
+                .opacity(0.96)
+                .ignoresSafeArea()
+        )
+        .onAppear {
+            DispatchQueue.main.async {
+                isAmountFieldFocused = true
             }
         }
     }
@@ -404,3 +525,9 @@ private extension Array {
         return chunks
     }
 }
+
+#if canImport(UIKit)
+private func dismissKeyboardGlobally() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+}
+#endif

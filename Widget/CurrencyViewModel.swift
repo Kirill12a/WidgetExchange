@@ -115,7 +115,7 @@ final class CurrencyViewModel: ObservableObject {
             return
         }
 
-        amountText = sanitized.isEmpty ? "0" : sanitized
+        amountText = sanitized
         updateConversion()
     }
 
@@ -164,29 +164,30 @@ final class CurrencyViewModel: ObservableObject {
     }
 
     private func updateConversion() {
-        guard let amount = Double(amountText),
-              let rate = latestRates?.rates[targetCurrency] else {
+        guard let rate = latestRates?.rates[targetCurrency] else {
             convertedValue = nil
             return
         }
+        let amount = Double(amountText.isEmpty ? "0" : amountText) ?? 0
         convertedValue = amount * rate
-        persistSnapshot()
+        persistSnapshot(amountOverride: amount, rateOverride: rate)
     }
 
-    private func persistSnapshot() {
-        guard let amount = Double(amountText),
-              let convertedValue,
-              let rate = latestRates?.rates[targetCurrency] else {
+    private func persistSnapshot(amountOverride: Double? = nil, rateOverride: Double? = nil) {
+        guard let convertedValue,
+              let rate = rateOverride ?? latestRates?.rates[targetCurrency] else {
             return
         }
+        let amount = amountOverride ?? Double(amountText.isEmpty ? "0" : amountText) ?? 0
         let timestamp = lastUpdated ?? Date()
+        let persistedText = amountText.isEmpty ? "0" : amountText
 
         let snapshot = ConverterSnapshot(
             baseCurrency: baseCurrency,
             targetCurrency: targetCurrency,
             rate: rate,
             amount: amount,
-            amountText: amountText,
+            amountText: persistedText,
             converted: convertedValue,
             timestamp: timestamp,
             chartSeries: chartSeries
