@@ -43,10 +43,6 @@ struct ConverterDashboardView: View {
                         )
                     }
 
-                    WidgetPresetConfigCard(viewModel: viewModel) {
-                        isEditingPresets = true
-                    }
-
                     SubscriptionCard(purchaseManager: purchaseManager)
 
                     if !purchaseManager.isSubscribed {
@@ -406,46 +402,6 @@ private struct WidgetSnippetView: View {
             .background(Color(.black).opacity(0.85), in: RoundedRectangle(cornerRadius: 12))
             .foregroundColor(.green)
         }
-    }
-}
-
-// MARK: - Widget preset configuration
-
-private struct WidgetPresetConfigCard: View {
-    @ObservedObject var viewModel: CurrencyViewModel
-    let editAction: () -> Void
-
-    private var currentRate: Double? {
-        viewModel.latestRates?.rates[viewModel.targetCurrency]
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Быстрые суммы для виджета")
-                        .font(.headline)
-                    Text("Чипы появятся прямо в виджете и покажут конверсию без открытия приложения.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button("Настроить") {
-                    editAction()
-                }
-                .buttonStyle(.bordered)
-            }
-
-            if viewModel.widgetPresets.isEmpty {
-                Text("Добавь первые суммы, чтобы активировать блок.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            } else {
-                FlexibleChipGrid(presets: viewModel.widgetPresets, base: viewModel.baseCurrency, target: viewModel.targetCurrency, rate: currentRate)
-            }
-        }
-        .padding(20)
-        .background(.background, in: RoundedRectangle(cornerRadius: 24))
     }
 }
 
