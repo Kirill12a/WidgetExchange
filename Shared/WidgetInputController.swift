@@ -24,7 +24,7 @@ final class WidgetInputController {
     }
 
     func handle(button: WidgetKeypadButton) {
-        var snapshot = cache.loadSnapshot() ?? .placeholder
+        let snapshot = cache.loadSnapshot() ?? .placeholder
         var amountText = snapshot.amountText
 
         switch button {

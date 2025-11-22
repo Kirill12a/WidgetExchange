@@ -78,41 +78,29 @@ struct WidgetFXWidgetEntryView: View {
 @available(iOSApplicationExtension 17.0, *)
 private struct WidgetFXLargeView: View {
     let entry: WidgetFXEntry
+    private var conversions: [WidgetConversionDisplay] {
+        if entry.conversions.isEmpty {
+            return WidgetConversionBuilder.makePlaceholder(base: entry.snapshot.baseCurrency)
+        }
+        return entry.conversions
+    }
 
     var body: some View {
         ZStack {
-            angularGradientBackground
-            VStack(spacing: 12) {
-                InputValueCard(amountText: entry.snapshot.amountText, currency: entry.snapshot.baseCurrency)
-                OutputValueCard(conversion: entry.conversions.first, targetCurrency: entry.snapshot.targetCurrency)
+            WidgetBackground()
+                .padding(4)
+            VStack(alignment: .leading, spacing: WidgetTheme.metrics.sectionSpacing) {
+                AmountSummaryCard(amountText: entry.snapshot.amountText, currency: entry.snapshot.baseCurrency)
+                    // Выносим ключевую сумму в отдельную карточку, чтобы взгляд сразу находил главный показатель.
+                ConversionSummaryCard(conversions: conversions, targetCurrency: entry.snapshot.targetCurrency)
+                    // Список конверсий и курс разделены, поэтому информация не смешивается и читается быстрее.
                 KeypadMockView(amountText: entry.snapshot.amountText)
-                TimestampRow(date: entry.snapshot.timestamp)
             }
-            .padding(16)
+            .padding(WidgetTheme.metrics.contentPadding)
         }
         .widgetURL(nil)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .transaction { $0.animation = nil }
-    }
-
-    private var angularGradientBackground: some View {
-        RoundedRectangle(cornerRadius: 28, style: .continuous)
-            .fill(
-                AngularGradient(
-                    gradient: Gradient(colors: [
-                        Color(red: 0.1, green: 0.12, blue: 0.2),
-                        Color(red: 0.2, green: 0.08, blue: 0.35),
-                        Color(red: 0.08, green: 0.22, blue: 0.32),
-                        Color(red: 0.12, green: 0.12, blue: 0.2)
-                    ]),
-                    center: .center
-                )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 28)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.3), radius: 18, x: 0, y: 12)
     }
 }
 
@@ -135,94 +123,76 @@ struct WidgetFXWidget: Widget {
 // MARK: - Helper views
 
 @available(iOSApplicationExtension 17.0, *)
-private struct InputValueCard: View {
+private struct AmountSummaryCard: View {
     let amountText: String
     let currency: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Сумма")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            HStack {
-                Text(amountText)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .lineLimit(1)
-                Spacer()
-                Text(currency)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+        WidgetSurfaceCard {
+            VStack(alignment: .leading, spacing: WidgetTheme.metrics.cardSpacing) {
+                WidgetSectionHeader(title: "Сумма", subtitle: "Базовая валюта")
+                HStack(alignment: .lastTextBaseline, spacing: 6) {
+                    Text(amountText)
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundStyle(WidgetTheme.palette.textPrimary)
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    CurrencyTag(text: currency)
+                }
             }
         }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
-                )
-        )
     }
 }
 
 @available(iOSApplicationExtension 17.0, *)
-private struct OutputValueCard: View {
-    let conversion: WidgetConversionDisplay?
+private struct ConversionSummaryCard: View {
+    let conversions: [WidgetConversionDisplay]
     let targetCurrency: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Конвертация")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            if let conversion {
-                HStack {
-                    Text(conversion.converted.formatted(.number.precision(.fractionLength(2))))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .lineLimit(1)
-                    Spacer()
-                    Text(conversion.code)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+        WidgetSurfaceCard(background: WidgetTheme.palette.surfaceSecondary) {
+            VStack(alignment: .leading, spacing: WidgetTheme.metrics.cardSpacing) {
+                WidgetSectionHeader(title: "Конвертация", subtitle: "до \(targetCurrency)")
+                if conversions.isEmpty {
+                    Text("Нет данных")
+                        .font(.footnote)
+                        .foregroundStyle(WidgetTheme.palette.textMuted)
+                } else {
+                    VStack(alignment: .leading, spacing: WidgetTheme.metrics.cardSpacing) {
+                        ForEach(conversions) { conversion in
+                            ConversionRow(conversion: conversion, targetCurrency: targetCurrency)
+                            if conversion.id != conversions.last?.id {
+                                WidgetDivider()
+                            }
+                        }
+                    }
                 }
-                Text("курс \(conversion.rate.formatted(.number.precision(.fractionLength(4)))) • \(targetCurrency)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Нет данных")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
         }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.09))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 0.8)
-                )
-        )
     }
 }
 
 @available(iOSApplicationExtension 17.0, *)
-private struct TimestampRow: View {
-    let date: Date
-
-    private var formatter: RelativeDateTimeFormatter {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .short
-        return formatter
-    }
+private struct ConversionRow: View {
+    let conversion: WidgetConversionDisplay
+    let targetCurrency: String
 
     var body: some View {
-        HStack {
-            Text("Обновлено \(formatter.localizedString(for: date, relativeTo: Date()))")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Spacer()
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(conversion.converted.formatted(.number.precision(.fractionLength(2))))
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    .foregroundStyle(WidgetTheme.palette.textPrimary)
+                    .lineLimit(1)
+                Spacer()
+                Text(conversion.code)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(WidgetTheme.palette.textSecondary)
+            }
+            Text("курс \(conversion.rate.formatted(.number.precision(.fractionLength(4)))) • \(targetCurrency)")
+                .font(.caption)
+                .foregroundStyle(WidgetTheme.palette.textMuted)
         }
     }
 }
@@ -237,84 +207,185 @@ private struct KeypadMockView: View {
         [.decimal, .digit0, .backspace]
     ]
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Набери сумму")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-
-            ForEach(Array(keys.enumerated()), id: \.offset) { rowIndex, row in
-                HStack(spacing: 8) {
-                    ForEach(row, id: \.self) { button in
-                        Button(intent: WidgetKeypadIntent(button: button)) {
-                            KeypadButton(label: button.symbol, accent: accentColor(for: button, row: rowIndex))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-        }
-        .padding(8)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.white.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 0.8)
-                )
-                .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 5)
-        )
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: WidgetTheme.metrics.gridSpacing), count: 3)
     }
 
-    private func accentColor(for button: WidgetKeypadButton, row: Int) -> Color {
-        switch button {
-        case .backspace:
-            return .red.opacity(0.8)
-        case .decimal, .digit0:
-            return .orange.opacity(0.8)
-        default:
-            if row == 0 {
-                return Color(red: 0.35, green: 0.68, blue: 0.98).opacity(0.9)
-            } else if row == 1 {
-                return Color(red: 0.4, green: 0.5, blue: 0.95).opacity(0.9)
-            } else if row == 2 {
-                return Color(red: 0.55, green: 0.45, blue: 0.98).opacity(0.9)
-            } else {
-                return Color(red: 0.95, green: 0.65, blue: 0.3).opacity(0.9)
+    var body: some View {
+        WidgetSurfaceCard(background: WidgetTheme.palette.surfaceSecondary) {
+            VStack(alignment: .leading, spacing: WidgetTheme.metrics.cardSpacing) {
+                LazyVGrid(columns: columns, spacing: WidgetTheme.metrics.gridSpacing) {
+                    ForEach(Array(keys.enumerated()), id: \.offset) { rowIndex, row in
+                        ForEach(row, id: \.self) { button in
+                            Button(intent: WidgetKeypadIntent(button: button)) {
+                                Text(button.symbol)
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(WidgetKeypadButtonStyle(tone: WidgetTheme.palette.keypadTone(for: button, row: rowIndex)))
+#if os(iOS)
+                            .hoverEffect(.lift)
+#endif
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-@available(iOSApplicationExtension 17.0, *)
-private struct KeypadButton: View {
-    let label: String
-    let accent: Color
+private struct WidgetDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(WidgetTheme.palette.divider)
+            .frame(height: 1)
+            .frame(maxWidth: .infinity)
+    }
+}
+
+private struct CurrencyTag: View {
+    let text: String
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
+        Text(text)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(WidgetTheme.palette.textPrimary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(WidgetTheme.palette.accentSecondary.opacity(0.25))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(WidgetTheme.palette.accentSecondary.opacity(0.35), lineWidth: 1)
+            )
+    }
+}
+
+private struct WidgetSectionHeader: View {
+    let title: String
+    var subtitle: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title.uppercased())
+                .font(.caption2)
+                .kerning(0.6)
+                .foregroundStyle(WidgetTheme.palette.textSecondary)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(WidgetTheme.palette.textMuted)
+            }
+        }
+    }
+}
+
+private struct WidgetSurfaceCard<Content: View>: View {
+    var background: Color
+    var border: Color
+    let content: Content
+
+    init(background: Color = WidgetTheme.palette.surfacePrimary, border: Color = WidgetTheme.palette.surfaceBorder, @ViewBuilder content: () -> Content) {
+        self.background = background
+        self.border = border
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .padding(WidgetTheme.metrics.cardPadding)
+            .background(
+                RoundedRectangle(cornerRadius: WidgetTheme.metrics.cardCorner, style: .continuous)
+                    .fill(background)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: WidgetTheme.metrics.cardCorner, style: .continuous)
+                            .stroke(border, lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+            )
+    }
+}
+
+private struct WidgetBackground: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: WidgetTheme.metrics.containerCorner, style: .continuous)
             .fill(
                 LinearGradient(
-                    colors: [
-                        accent.opacity(0.85),
-                        accent.opacity(0.5)
-                    ],
+                    colors: [WidgetTheme.palette.backgroundTop, WidgetTheme.palette.backgroundBottom],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                RoundedRectangle(cornerRadius: WidgetTheme.metrics.containerCorner, style: .continuous)
+                    .stroke(WidgetTheme.palette.surfaceHighlight.opacity(0.3), lineWidth: 1)
             )
-            .frame(height: 18)
             .overlay(
-                Text(label)
-                    .font(.footnote.weight(.semibold))
-                    .foregroundColor(.white)
-                    .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
+                RadialGradient(
+                    colors: [WidgetTheme.palette.backgroundAccent.opacity(0.35), .clear],
+                    center: .topLeading,
+                    startRadius: 20,
+                    endRadius: 160
+                )
+                .blendMode(.softLight)
+                .clipShape(RoundedRectangle(cornerRadius: WidgetTheme.metrics.containerCorner, style: .continuous))
             )
-            .shadow(color: accent.opacity(0.3), radius: 4, x: 0, y: 3)
+            .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct WidgetKeypadButtonStyle: ButtonStyle {
+    let tone: WidgetTheme.ButtonTone
+
+    func makeBody(configuration: Configuration) -> some View {
+        WidgetKeypadButtonBody(configuration: configuration, tone: tone)
+    }
+
+    private struct WidgetKeypadButtonBody: View {
+        @Environment(\.isEnabled) private var isEnabled
+        @State private var isHovered = false
+
+        let configuration: ButtonStyle.Configuration
+        let tone: WidgetTheme.ButtonTone
+
+        var body: some View {
+            let labelColor = isEnabled ? tone.label : tone.inactiveLabel
+            configuration.label
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundStyle(labelColor)
+                .frame(maxWidth: .infinity, minHeight: WidgetTheme.metrics.keypadButtonHeight)
+                .background(
+                    RoundedRectangle(cornerRadius: WidgetTheme.metrics.keypadButtonCorner, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [tone.start, tone.end],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .opacity(isEnabled ? 1 : 0.4)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: WidgetTheme.metrics.keypadButtonCorner, style: .continuous)
+                        .stroke(tone.border.opacity(isEnabled ? 1 : 0.4), lineWidth: 1)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: WidgetTheme.metrics.keypadButtonCorner, style: .continuous)
+                        .fill(Color.white.opacity(configuration.isPressed ? 0.15 : 0.02))
+                        .blendMode(.softLight)
+                )
+                .shadow(color: tone.shadow.opacity(configuration.isPressed ? 0.2 : (isHovered ? 0.45 : 0.35)), radius: configuration.isPressed ? 4 : (isHovered ? 10 : 7), x: 0, y: configuration.isPressed ? 2 : 6)
+                .scaleEffect(configuration.isPressed ? 0.95 : (isHovered ? 1.02 : 1))
+                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+                .animation(.easeOut(duration: 0.18), value: isHovered)
+#if os(iOS) || os(macOS)
+                .onHover { hover in
+                    isHovered = hover
+                }
+#endif
+        }
     }
 }
 
