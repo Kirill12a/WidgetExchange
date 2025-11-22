@@ -57,6 +57,12 @@ enum AppLocale {
         case widgetDisplayName = "widget.displayName"
         case widgetDescription = "widget.description"
         case widgetUnsupported = "widget.unsupported"
+        case widgetInstallTitle = "widget.install.title"
+        case widgetInstallSubtitle = "widget.install.subtitle"
+        case widgetInstallStep1 = "widget.install.step1"
+        case widgetInstallStep2 = "widget.install.step2"
+        case widgetInstallStep3 = "widget.install.step3"
+        case widgetInstallCTA = "widget.install.cta"
     }
 
     static func text(_ key: Key, _ args: CVarArg...) -> String {
@@ -116,7 +122,13 @@ enum AppLocale {
             Key.widgetTimestamp.rawValue: "Updated %@",
             Key.widgetDisplayName.rawValue: "Widget FX Converter",
             Key.widgetDescription.rawValue: "Type the amount and get instant multi-currency quotes.",
-            Key.widgetUnsupported.rawValue: "Add a large widget to access the keypad."
+            Key.widgetUnsupported.rawValue: "Add a large widget to access the keypad.",
+            Key.widgetInstallTitle.rawValue: "Add the widget",
+            Key.widgetInstallSubtitle.rawValue: "Pin Widget FX to the Home Screen for immediate access.",
+            Key.widgetInstallStep1.rawValue: "Touch and hold an empty area on the Home Screen.",
+            Key.widgetInstallStep2.rawValue: "Tap +, search for Widget FX, pick the large size.",
+            Key.widgetInstallStep3.rawValue: "Tap Add Widget and exit editing mode.",
+            Key.widgetInstallCTA.rawValue: "Open widget gallery"
         ],
         "ru": [
             Key.dashboardTitle.rawValue: "Widget FX",
@@ -166,7 +178,13 @@ enum AppLocale {
             Key.widgetTimestamp.rawValue: "Обновлено %@",
             Key.widgetDisplayName.rawValue: "Конвертер Widget FX",
             Key.widgetDescription.rawValue: "Вводи сумму и смотри курсы сразу в нескольких валютах.",
-            Key.widgetUnsupported.rawValue: "Добавь большой виджет, чтобы увидеть клавиатуру."
+            Key.widgetUnsupported.rawValue: "Добавь большой виджет, чтобы увидеть клавиатуру.",
+            Key.widgetInstallTitle.rawValue: "Добавь виджет",
+            Key.widgetInstallSubtitle.rawValue: "Закрепи Widget FX на домашнем экране, чтобы ввод был в одно касание.",
+            Key.widgetInstallStep1.rawValue: "Удерживай пустую область на домашнем экране.",
+            Key.widgetInstallStep2.rawValue: "Нажми +, найди Widget FX и выбери большой размер.",
+            Key.widgetInstallStep3.rawValue: "Нажми «Добавить виджет» и выйди из режима редактирования.",
+            Key.widgetInstallCTA.rawValue: "Открыть галерею виджетов"
         ]
     ]
 }

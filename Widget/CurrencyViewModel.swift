@@ -26,6 +26,7 @@ final class CurrencyViewModel: ObservableObject {
     ]
     @Published var chartSeries: [RatePoint] = []
     @Published var widgetPresets: [WidgetPreset] = []
+    @Published var isWidgetInstalled = false
 
     var heroCopy: String {
         if widgetLinks.count > 2 {
@@ -75,6 +76,7 @@ final class CurrencyViewModel: ObservableObject {
         Task {
             await refreshRates()
             await refreshTrend()
+            await detectWidgetPresence()
         }
     }
 
@@ -164,6 +166,14 @@ final class CurrencyViewModel: ObservableObject {
 #endif
     }
 
+    func refreshWidgetPresence() {
+#if canImport(WidgetKit)
+        Task { await detectWidgetPresence() }
+#else
+        isWidgetInstalled = false
+#endif
+    }
+
     private func updateConversion() {
         guard let rate = latestRates?.rates[targetCurrency] else {
             convertedValue = nil
@@ -196,6 +206,24 @@ final class CurrencyViewModel: ObservableObject {
         cache.saveSnapshot(snapshot)
 #if canImport(WidgetKit)
         WidgetCenter.shared.reloadTimelines(ofKind: SharedConstants.widgetKind)
+#endif
+    }
+
+    private func detectWidgetPresence() async {
+#if canImport(WidgetKit)
+        await withCheckedContinuation { continuation in
+            WidgetCenter.shared.getCurrentConfigurations { result in
+                switch result {
+                case .success(let configurations):
+                    self.isWidgetInstalled = configurations.contains { $0.kind == SharedConstants.widgetKind }
+                case .failure:
+                    self.isWidgetInstalled = false
+                }
+                continuation.resume()
+            }
+        }
+#else
+        isWidgetInstalled = false
 #endif
     }
 }

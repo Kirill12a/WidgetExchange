@@ -31,6 +31,10 @@ struct ConverterDashboardView: View {
                         HeroConversionCard(viewModel: viewModel, isSubscribed: purchaseManager.isSubscribed, palette: palette)
 
                         AmountInputCard(viewModel: viewModel, palette: palette)
+
+                        if !viewModel.isWidgetInstalled {
+                            WidgetInstallCallout()
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 32)
@@ -72,6 +76,9 @@ struct ConverterDashboardView: View {
                 await viewModel.refreshRates()
                 await viewModel.refreshTrend()
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            viewModel.refreshWidgetPresence()
         }
 #if canImport(UIKit)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -237,6 +244,56 @@ private struct CurrencyPickerRow: View {
                 .padding()
                 .background(palette.secondaryCardBackground, in: RoundedRectangle(cornerRadius: 16))
             }
+        }
+    }
+}
+
+private struct WidgetInstallCallout: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: "rectangle.grid.2x2")
+                    .font(.title2)
+                    .foregroundColor(.accentColor)
+                    .padding(12)
+                    .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(AppLocale.text(.widgetInstallTitle))
+                        .font(.headline)
+                    Text(AppLocale.text(.widgetInstallSubtitle))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                InstructionRow(index: 1, text: AppLocale.text(.widgetInstallStep1))
+                InstructionRow(index: 2, text: AppLocale.text(.widgetInstallStep2))
+                InstructionRow(index: 3, text: AppLocale.text(.widgetInstallStep3))
+            }
+
+            Text(AppLocale.text(.widgetInstallCTA))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(18)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 24))
+        .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 8)
+    }
+}
+
+private struct InstructionRow: View {
+    let index: Int
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text("\(index)")
+                .font(.footnote.weight(.bold))
+                .frame(width: 24, height: 24)
+                .background(Color.accentColor.opacity(0.15), in: Circle())
+            Text(text)
+                .font(.footnote)
         }
     }
 }
