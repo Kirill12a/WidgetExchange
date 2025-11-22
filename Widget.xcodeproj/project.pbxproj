@@ -6,8 +6,37 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D2338CB92EC115000003D6FF /* WidgetFXWidgetExtension.appex in Embed Extensions */ = {isa = PBXBuildFile; fileRef = D2338CB32EC115000003D6FF /* WidgetFXWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D2338CBA2EC115000003D6FF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D2338C932EC112000003D6FF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D2338CB82EC115000003D6FF;
+			remoteInfo = WidgetFXWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D2338CB72EC115000003D6FF /* Embed Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				D2338CB92EC115000003D6FF /* WidgetFXWidgetExtension.appex in Embed Extensions */,
+			);
+			name = "Embed Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		D2338C9B2EC112000003D6FF /* Widget.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Widget.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D2338CB32EC115000003D6FF /* WidgetFXWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WidgetFXWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +45,32 @@
 			path = Widget;
 			sourceTree = "<group>";
 		};
+		D2338CB12EC115000003D6FF /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		D2338CB22EC115000003D6FF /* WidgetFXWidgetExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WidgetFXWidgetExtension;
+			sourceTree = "<group>";
+		};
+		D2338CC02EC1160C0003D6FF /* Config */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Config;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		D2338C982EC112000003D6FF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D2338CB42EC115000003D6FF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +84,9 @@
 			isa = PBXGroup;
 			children = (
 				D2338C9D2EC112000003D6FF /* Widget */,
+				D2338CB12EC115000003D6FF /* Shared */,
+				D2338CB22EC115000003D6FF /* WidgetFXWidgetExtension */,
+				D2338CC02EC1160C0003D6FF /* Config */,
 				D2338C9C2EC112000003D6FF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +95,7 @@
 			isa = PBXGroup;
 			children = (
 				D2338C9B2EC112000003D6FF /* Widget.app */,
+				D2338CB32EC115000003D6FF /* WidgetFXWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,13 +110,16 @@
 				D2338C972EC112000003D6FF /* Sources */,
 				D2338C982EC112000003D6FF /* Frameworks */,
 				D2338C992EC112000003D6FF /* Resources */,
+				D2338CB72EC115000003D6FF /* Embed Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				D2338CBB2EC115000003D6FF /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				D2338C9D2EC112000003D6FF /* Widget */,
+				D2338CB12EC115000003D6FF /* Shared */,
 			);
 			name = Widget;
 			packageProductDependencies = (
@@ -69,6 +127,29 @@
 			productName = Widget;
 			productReference = D2338C9B2EC112000003D6FF /* Widget.app */;
 			productType = "com.apple.product-type.application";
+		};
+		D2338CB82EC115000003D6FF /* WidgetFXWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D2338CBC2EC115000003D6FF /* Build configuration list for PBXNativeTarget "WidgetFXWidgetExtension" */;
+			buildPhases = (
+				D2338CB62EC115000003D6FF /* Sources */,
+				D2338CB42EC115000003D6FF /* Frameworks */,
+				D2338CB52EC115000003D6FF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D2338CB12EC115000003D6FF /* Shared */,
+				D2338CB22EC115000003D6FF /* WidgetFXWidgetExtension */,
+			);
+			name = WidgetFXWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = WidgetFXWidgetExtension;
+			productReference = D2338CB32EC115000003D6FF /* WidgetFXWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +162,9 @@
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					D2338C9A2EC112000003D6FF = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
+					D2338CB82EC115000003D6FF = {
 						CreatedOnToolsVersion = 26.0.1;
 					};
 				};
@@ -100,12 +184,20 @@
 			projectRoot = "";
 			targets = (
 				D2338C9A2EC112000003D6FF /* Widget */,
+				D2338CB82EC115000003D6FF /* WidgetFXWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		D2338C992EC112000003D6FF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D2338CB52EC115000003D6FF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +214,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D2338CB62EC115000003D6FF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D2338CBB2EC115000003D6FF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D2338CB82EC115000003D6FF /* WidgetFXWidgetExtension */;
+			targetProxy = D2338CBA2EC115000003D6FF /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		D2338CA62EC112020003D6FF /* Debug */ = {
@@ -251,6 +358,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				CODE_SIGN_ENTITLEMENTS = Widget/Widget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UJ8B9FFXUA;
@@ -283,6 +392,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				CODE_SIGN_ENTITLEMENTS = Widget/Widget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UJ8B9FFXUA;
@@ -310,6 +421,62 @@
 			};
 			name = Release;
 		};
+		D2338CBD2EC115000003D6FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				CODE_SIGN_ENTITLEMENTS = WidgetFXWidgetExtension/WidgetFXWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UJ8B9FFXUA;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Config/WidgetFXWidgetExtension-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Widget FX";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = kikoki.Widget.WidgetFXWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D2338CBE2EC115000003D6FF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				CODE_SIGN_ENTITLEMENTS = WidgetFXWidgetExtension/WidgetFXWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UJ8B9FFXUA;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Config/WidgetFXWidgetExtension-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Widget FX";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = kikoki.Widget.WidgetFXWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -327,6 +494,15 @@
 			buildConfigurations = (
 				D2338CA92EC112020003D6FF /* Debug */,
 				D2338CAA2EC112020003D6FF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D2338CBC2EC115000003D6FF /* Build configuration list for PBXNativeTarget "WidgetFXWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D2338CBD2EC115000003D6FF /* Debug */,
+				D2338CBE2EC115000003D6FF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
